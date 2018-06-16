@@ -10,6 +10,7 @@ import { INoteViewerComponentProps } from '../NoteViewerComponent';
 import { Button, Icon, Row } from 'react-materialize';
 import Draggable, { DraggableData } from 'react-draggable';
 import SourcesComponent from '../../../containers/SourcesContainer';
+import { Dialog } from '../../../dialogs';
 
 export interface INoteElementComponentProps extends Partial<INoteViewerComponentProps> {
 	element: NoteElement;
@@ -130,7 +131,7 @@ export default class NoteElementComponent extends React.Component<INoteElementCo
 							<div>
 								<Row style={{paddingLeft: '5px'}}>
 									<Button className="red" waves="light" onClick={this.delete} style={{marginRight: '5px'}}><Icon left={true}>delete_forever</Icon> Delete</Button>
-									<span style={{marginRight: '5px'}}><SourcesComponent /></span>
+									<span className="bib-container" style={{marginRight: '5px'}}><SourcesComponent /></span>
 								</Row>
 
 								<Row style={{paddingLeft: '5px'}}>
@@ -173,12 +174,12 @@ export default class NoteElementComponent extends React.Component<INoteElementCo
 		});
 	}
 
-	private delete = () => {
+	private delete = async () => {
 		const { element, deleteElement, edit } = this.props;
-		if (confirm('Are you sure you want to delete this element?')) {
-			deleteElement!(element.args.id);
-			edit!('');
-		}
+		if (!await Dialog.confirm('Are you sure you want to delete this element?')) return;
+
+		deleteElement!(element.args.id);
+		edit!('');
 	}
 
 	private openEditor = event => {

@@ -21,17 +21,24 @@ export interface IInsertElementComponentProps {
 
 export default class InsertElementComponent extends React.Component<IInsertElementComponentProps> {
 	render() {
-		const { x, y, enabled, fontSize } = this.props;
+		const { note, x, y, enabled, fontSize } = this.props;
+		if (!note) return null;
 
+		const elementHeight = 260;
 		const containerStyles = {
+			padding: 0,
+			height: elementHeight + 'px',
 			left: x,
-			top: y,
+			top: (y < window.innerHeight - elementHeight - 200) ? y : y - elementHeight,
 			zIndex: 5000,
 			display: (enabled) ? undefined : 'none'
 		};
 
-		const insertX = Math.abs(Math.floor(document.getElementById('note-container')!.getBoundingClientRect().left)) + x;
-		const insertY = (Math.abs(Math.floor(document.getElementById('note-container')!.getBoundingClientRect().top)) + y) - 128;
+		const noteContainer = document.getElementById('note-container');
+		if (!noteContainer) return null;
+
+		const insertX = Math.abs(Math.floor(noteContainer.getBoundingClientRect().left)) + x;
+		const insertY = (Math.abs(Math.floor(noteContainer.getBoundingClientRect().top)) + y) - 128;
 
 		const defaultArgs: IElementArgs = {
 			id: '',
@@ -110,7 +117,9 @@ export default class InsertElementComponent extends React.Component<IInsertEleme
 		const { note, insert, toggleInsertMenu, edit } = this.props;
 		toggleInsertMenu!({ enabled: false });
 
-		const id = `${element.type}${note.elements.filter(e => e.type === element.type).length + 1}`;
+		let count = note.elements.filter(e => e.type === element.type).length + 1;
+		let id = `${element.type}${count}`;
+		while (note.elements.some(e => e.args.id === id)) id = `${element.type}${++count}`;
 		insert!({
 			element: {
 				...element,

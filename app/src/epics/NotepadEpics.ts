@@ -1,5 +1,5 @@
 import { actions } from '../actions';
-import { catchError, filter, map, mergeMap, retry, switchMap, tap } from 'rxjs/operators';
+import { catchError, combineLatest, filter, map, mergeMap, retry, switchMap, tap } from 'rxjs/operators';
 import { Action, isType, Success } from 'redux-typescript-actions';
 import { combineEpics } from 'redux-observable';
 import * as Parser from 'upad-parse/dist/index.js';
@@ -22,6 +22,9 @@ import * as JSZip from 'jszip';
 import { isAction } from '../util';
 import { ajax } from 'rxjs/observable/dom/ajax';
 import { AjaxResponse } from 'rxjs/observable/dom/AjaxObservable';
+import { Dialog } from '../dialogs';
+import { of } from 'rxjs/observable/of';
+import { ISyncedNotepad, SyncedNotepadList, SyncUser } from '../types/SyncTypes';
 
 const parseQueue: string[] = [];
 
@@ -33,7 +36,7 @@ const parseNpx$ = action$ =>
 				try {
 					Parser.parse(action.payload, ['asciimath']);
 				} catch (err) {
-					alert(`Error reading file`);
+					Dialog.alert(`Error reading file`);
 					console.error(err);
 					reject(err);
 					return;
@@ -54,7 +57,7 @@ const parseNpx$ = action$ =>
 						resolve(notepad);
 					});
 				} catch (err) {
-					alert(`Error reading file`);
+					Dialog.alert(`Error reading file`);
 					console.error(err);
 					reject(err);
 				}
@@ -66,6 +69,15 @@ const parseNpx$ = action$ =>
 		})
 	);
 
+const syncOnNotepadParsed$ = (action$, store) =>
+	action$.pipe(
+		isAction(actions.updateCurrentSyncId),
+		map(() => store.getState()),
+		map((state: IStoreState) => state.notepads.notepad),
+		filter((npState: INotepadStoreState) => !!npState && !!npState.item),
+		map((npState: INotepadStoreState) => actions.actWithSyncNotepad({ notepad: npState.item!, action: (np: ISyncedNotepad) => actions.sync({ notepad: np, syncId: npState.activeSyncId! }) }))
+	);
+
 const parseEnex$ = action$ =>
 	action$.pipe(
 		isAction(actions.parseEnex),
@@ -74,7 +86,7 @@ const parseEnex$ = action$ =>
 			try {
 				Parser.parseFromEvernote(enex, ['asciimath']);
 			} catch (err) {
-				alert(`Error reading file`);
+				Dialog.alert(`Error reading file`);
 				console.error(err);
 				return;
 			}
@@ -103,7 +115,7 @@ const restoreJsonNotepad$ = action$ =>
 					result: notepad
 				});
 			} catch (err) {
-				alert(`Error restoring notepad`);
+				Dialog.alert(`Error restoring notepad`);
 				console.error(err);
 				return actions.parseNpx.failed({
 					params: '',
@@ -249,9 +261,11 @@ const downloadExternalNotepad$ = action$ =>
 	action$.pipe(
 		isAction(actions.downloadNotepad.started),
 		map((action: Action<string>) => action.payload),
-		map(url => [url, confirm(`Are you sure you want to download this notepad: ${url}?`)]),
+		switchMap(url => of(url).pipe(
+			combineLatest(fromPromise(Dialog.confirm(`Are you sure you want to download this notepad: ${url}?`)))
+		)),
 		filter(([url, shouldDownload]: [string, boolean]) => shouldDownload),
-		map(([url]: [string]) => url),
+		map(([url]: [string, boolean]) => url),
 		mergeMap((url: string) =>
 			ajax({
 				url,
@@ -264,7 +278,7 @@ const downloadExternalNotepad$ = action$ =>
 				map((res: AjaxResponse) => actions.parseNpx.started(res.response)),
 				retry(2),
 				catchError(err => {
-					alert(`Download failed. Are you online?`);
+					Dialog.alert(`Download failed. Are you online?`);
 					return Observable.of(actions.downloadNotepad.failed({ params: url, error: err }));
 				})
 			)
@@ -301,8 +315,15 @@ const loadNotepadByIndex$ = (action$, store) =>
 		map((title: string) => actions.openNotepadFromStorage.started(title))
 	);
 
+const updateSyncedNotepadIdOnSyncListLoad$ = action$ =>
+	action$.pipe(
+		isAction(actions.getSyncedNotepadList.done),
+		map((action: Action<Success<SyncUser, SyncedNotepadList>>) => actions.updateCurrentSyncId(action.payload.result))
+	);
+
 export const notepadEpics$ = combineEpics(
 	parseNpx$,
+	syncOnNotepadParsed$,
 	restoreJsonNotepad$,
 	exportNotepad$,
 	exportAll$,
@@ -313,7 +334,8 @@ export const notepadEpics$ = combineEpics(
 	queueParseNpx$,
 	getNextParse$,
 	parseEnex$,
-	loadNotepadByIndex$
+	loadNotepadByIndex$,
+	updateSyncedNotepadIdOnSyncListLoad$
 );
 
 interface IExportedNotepad {

@@ -4,10 +4,14 @@ import {
 	IDeleteElementAction,
 	IInsertElementAction,
 	INewNotepadObjectAction,
+	INotepadToSyncNotepadAction,
+	ISyncAction,
 	IUpdateBibliographyAction,
-	IUpdateElementAction
+	IUpdateElementAction,
+	IUploadAssetAction
 } from './types/ActionTypes';
 import { IInsertElementState } from './reducers/NoteReducer';
+import { AssetList, SyncedNotepadList, SyncLoginRequest, SyncUser } from './types/SyncTypes';
 
 const actionCreator = actionCreatorFactory();
 
@@ -22,6 +26,14 @@ export const actions = {
 	loadNote: actionCreator.async<string, object, any>('LOAD_NOTE'),
 	downloadAsset: actionCreator.async<{ filename: string, uuid: string }, void, any>('DOWNLOAD_ASSET'),
 	expandAllExplorer: actionCreator.async<void, string[], any>('EXPAND_ALL_EXPLORER'),
+	print: actionCreator.async<void, NoteElement, void>('PRINT'),
+	syncLogin: actionCreator.async<SyncLoginRequest, SyncUser, any>('SYNC_LOGIN'),
+	getSyncedNotepadList: actionCreator.async<SyncUser, SyncedNotepadList, any>('SYNC_GET_NOTEPAD_LIST'),
+	syncDownload: actionCreator.async<string, INotepad, any>('SYNC_DOWNLOAD'),
+	syncUpload: actionCreator.async<ISyncAction, AssetList, any>('SYNC_UPLOAD'),
+	syncUploadAsset: actionCreator.async<IUploadAssetAction, void, any>('SYNC_UPLOAD_ASSET'),
+	deleteFromSync: actionCreator.async<string, void, any>('SYNC_DELETE'),
+	addToSync: actionCreator.async<SyncUser, string, any>('SYNC_CREATE'),
 
 	restoreJsonNotepad: actionCreator<string>('PARSE_JSON_NOTEPAD'),
 	newNotepad: actionCreator<INotepad>('NEW_NOTEPAD'),
@@ -54,5 +66,15 @@ export const actions = {
 	parseEnex: actionCreator<string>('PARSE_ENEX'),
 	updateBibliography: actionCreator<IUpdateBibliographyAction>('UPDATE_BIBLIOGRAPHY'),
 	loadNotepadByIndex: actionCreator<number>('LOAD_NOTEPAD_BY_INDEX'),
-	updateZoomLevel: actionCreator<number>('UPDATE_ZOOM_LEVEL')
+	updateZoomLevel: actionCreator<number>('UPDATE_ZOOM_LEVEL'),
+	clearPrintView: actionCreator<void>('CLEAR_PRINT'),
+	syncLogout: actionCreator<void>('SYNC_LOGOUT'),
+	updateCurrentSyncId: actionCreator<SyncedNotepadList>('UPDATE_SYNC_ID'),
+	sync: actionCreator<ISyncAction>('SYNC'),
+	actWithSyncNotepad: actionCreator<INotepadToSyncNotepadAction>('ACT_WITH_SYNC_NOTEPAD'),
+	requestSyncDownload: actionCreator<string>('REQUEST_SYNC_DOWNLOAD'),
+	syncProError: actionCreator<void>('SYNC_PRO_ERROR'),
+	setHelpPref: actionCreator<boolean>('SET_HELP_PREF'),
+	syncAssetsAllDone: actionCreator<void>('SYNC_ASSETS_ALL_DONE'),
+	checkVersion: actionCreator<void>('CHECK_VERSION_ELECTRON')
 };

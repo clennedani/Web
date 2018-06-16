@@ -1,6 +1,6 @@
 import { IReducer } from '../types/ReducerType';
 import { Action } from 'redux';
-import { INote, INotepad, INotepadsStoreState, IParent, ISection } from '../types/NotepadTypes';
+import { INote, INotepad, INotepadsStoreState, INotepadStoreState, IParent, ISection } from '../types/NotepadTypes';
 import { actions } from '../actions';
 import { isType } from 'redux-typescript-actions';
 import { getNotepadObjectByRef, restoreObject } from '../util';
@@ -36,6 +36,14 @@ export class NotepadsReducer implements IReducer<INotepadsStoreState> {
 				notepad: {
 					saving: false,
 					isLoading: true
+				}
+			};
+		} else if (isType(action, actions.parseNpx.failed)) {
+			return {
+				...state,
+				notepad: {
+					isLoading: false,
+					saving: false
 				}
 			};
 		} else if (isType(action, actions.getNotepadList.started)) {
@@ -364,6 +372,8 @@ export class NotepadsReducer implements IReducer<INotepadsStoreState> {
 				}
 			};
 		} else if (isType(action, actions.deleteElement)) {
+			let assetGuid: string | undefined;
+
 			const newNotepad = getNotepadObjectByRef({
 				...state.notepad!.item!,
 				lastModified: format(new Date(), 'YYYY-MM-DDTHH:mm:ss.SSSZ')
@@ -371,7 +381,12 @@ export class NotepadsReducer implements IReducer<INotepadsStoreState> {
 				const section = <ISection> obj.parent;
 				const index = section.notes.indexOf(<INote> obj);
 
-				const newElements = section.notes[index].elements.filter(e => e.args.id !== action.payload.elementId);
+				const newElements = section.notes[index].elements.filter(e => {
+					if (e.args.id !== action.payload.elementId) return true;
+
+					assetGuid = e.args.ext;
+					return false;
+				});
 
 				section.notes[index] = restoreObject<INote>({
 					...section.notes[index],
@@ -383,6 +398,7 @@ export class NotepadsReducer implements IReducer<INotepadsStoreState> {
 			});
 
 			const notepad = <INotepad> restoreObject({ ...newNotepad }, Parser.createNotepad(newNotepad.title));
+			if (!!assetGuid) notepad.notepadAssets = notepad.notepadAssets.filter(guid => guid !== assetGuid);
 
 			return {
 				...state,
@@ -415,6 +431,38 @@ export class NotepadsReducer implements IReducer<INotepadsStoreState> {
 				notepad: {
 					...state.notepad!,
 					item: notepad
+				}
+			};
+		} else if (isType(action, actions.updateCurrentSyncId)) {
+			if (!(state.notepad || <INotepadStoreState> {}).item) return state;
+			const title = state.notepad!.item!.title;
+
+			const id = action.payload[title];
+			if (!id) return state;
+
+			return {
+				...state,
+				notepad: {
+					...state.notepad!,
+					activeSyncId: id
+				}
+			};
+		} else if (isType(action, actions.addToSync.done)) {
+			if (!state.notepad) return state;
+			return {
+				...state,
+				notepad: {
+					...state.notepad,
+					activeSyncId: action.payload.result
+				}
+			};
+		} else if (isType(action, actions.deleteFromSync.done)) {
+			if (!state.notepad) return state;
+			return {
+				...state,
+				notepad: {
+					...state.notepad,
+					activeSyncId: undefined
 				}
 			};
 		}

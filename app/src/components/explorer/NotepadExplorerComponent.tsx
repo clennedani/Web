@@ -6,6 +6,9 @@ import TreeView from 'react-treeview';
 import { generateGuid } from '../../util';
 import ExplorerOptionsComponent from './ExplorerOptionsComponent';
 import { INewNotepadObjectAction } from '../../types/ActionTypes';
+import HelpMessageComponent from '../../containers/HelpMessageContainer';
+import { Dialog } from '../../dialogs';
+import SyncOptionsComponent from '../../containers/SyncOptionsContainer';
 
 export interface INotepadExplorerComponentProps {
 	notepad?: INotepad;
@@ -26,6 +29,7 @@ export interface INotepadExplorerComponentProps {
 	collapseAll?: () => void;
 	newSection?: (obj: INewNotepadObjectAction) => void;
 	newNote?: (obj: INewNotepadObjectAction) => void;
+	print?: () => void;
 }
 
 export default class NotepadExplorerComponent extends React.Component<INotepadExplorerComponentProps> {
@@ -64,7 +68,7 @@ export default class NotepadExplorerComponent extends React.Component<INotepadEx
 					<div style={{ paddingBottom: '200px' }}>
 						<a href="#!" onClick={flipFullScreenState} style={{ paddingRight: '5px', fontSize: '24px' }}>»</a>
 						<strong style={{ display: 'inline-flex' }}>
-							{notepad.title}
+							<span style={{ paddingRight: '5px' }}>{notepad.title}</span>
 							<ExplorerOptionsComponent
 								objToEdit={notepad}
 								type="notepad"
@@ -72,6 +76,7 @@ export default class NotepadExplorerComponent extends React.Component<INotepadEx
 								exportNotepad={exportNotepad}
 								renameNotepad={renameNotepad}/>
 						</strong>
+
 						<p style={{paddingLeft: '10px', marginTop: '0px'}}>
 							(<a href="#!" onClick={expandAll}>Expand All</a> | <a href="#!" onClick={() => {
 								if (!!openNote) {
@@ -86,15 +91,51 @@ export default class NotepadExplorerComponent extends React.Component<INotepadEx
 						</div>
 
 						{treeViews}
+
+						<div style={{ paddingLeft: '10px', marginTop: '10px' }}>
+							<SyncOptionsComponent />
+						</div>
+
+						{
+							/* Help messages */
+							!openNote &&
+							<React.Fragment>
+								{
+									(
+										notepad.sections.length === 0 ||
+										notepad.sections.some(s => s.notes.length === 0 && s.sections.length === 0)
+									) &&
+									<HelpMessageComponent
+										message="Create/open a section and a note to insert elements:"
+										video={require('../../assets/instructions/new-section.mp4')} />
+								}
+								{
+									(
+										notepad.sections.length > 0 &&
+										notepad.sections.every(s => (s.notes.length > 0 || s.sections.length > 0))
+									) &&
+									<HelpMessageComponent
+										message="Open a note to insert elements:"
+										video={require('../../assets/instructions/open-note.mp4')} />
+								}
+							</React.Fragment>
+						}
 					</div>
+				}
+
+				{
+					!notepad &&
+					<HelpMessageComponent
+						message="Open/create a notepad to start:"
+						video={require('../../assets/instructions/open-notepad.mp4')} />
 				}
 			</div>
 		);
 	}
 
-	private newNotepadObject = (type: 'note' | 'section', parent: IParent) => {
+	private newNotepadObject = async (type: 'note' | 'section', parent: IParent) => {
 		const { newNote, newSection } = this.props;
-		const title = prompt('Title:');
+		const title = await Dialog.prompt('Title:');
 
 		if (title) {
 			const action: INewNotepadObjectAction = {
@@ -107,7 +148,7 @@ export default class NotepadExplorerComponent extends React.Component<INotepadEx
 	}
 
 	private generateSectionTreeView(section: ISection): JSX.Element {
-		const { loadNote, deleteNotepadObject, renameNotepadObject, openNote } = this.props;
+		const { loadNote, deleteNotepadObject, renameNotepadObject, openNote, print } = this.props;
 
 		const nodeLabelStyle = {
 			display: 'inline-flex',
@@ -132,6 +173,7 @@ export default class NotepadExplorerComponent extends React.Component<INotepadEx
 							loadNote={() => {
 								if (!openNote || openNote.internalRef !== child.internalRef) loadNote!(child.internalRef);
 							}}
+							print={print}
 							deleteNotepadObject={deleteNotepadObject}
 							renameNotepadObject={renameNotepadObject}/>
 					</span>

@@ -30,6 +30,10 @@ nav {
 	user-select: none;
 }
 
+.brand-logo {
+	cursor: default;
+}
+
 .side-nav li {
 	color: rgba(0,0,0,0.87);
 }
@@ -44,6 +48,11 @@ nav {
 
 nav .material-icons.left {
 	margin-right: 10px;
+}
+
+nav .menu-items > div {
+	float: left;
+	padding: 0;
 }
 
 .material-icons {
@@ -61,6 +70,14 @@ input:not([type]):focus:not([readonly]), input[type=text]:focus:not([readonly]),
 
 .btn:hover, .btn-large:hover {
 	background-color: #ffb300;
+}
+
+.vex-dialog-button-primary {
+	background-color: #ffb300 !important;
+}
+
+.vex-dialog-prompt-input {
+	padding: 0 !important;
 }
 
 div.col.input-field {
@@ -81,4 +98,8 @@ div.col.input-field {
 	background-origin: content-box;
 	box-sizing: border-box;
 	cursor: se-resize;
+}
+
+input:not([type]):focus:not([readonly])+label, input[type=text]:not(.browser-default):focus:not([readonly])+label, input[type=password]:not(.browser-default):focus:not([readonly])+label, input[type=email]:not(.browser-default):focus:not([readonly])+label, input[type=url]:not(.browser-default):focus:not([readonly])+label, input[type=time]:not(.browser-default):focus:not([readonly])+label, input[type=date]:not(.browser-default):focus:not([readonly])+label, input[type=datetime]:not(.browser-default):focus:not([readonly])+label, input[type=datetime-local]:not(.browser-default):focus:not([readonly])+label, input[type=tel]:not(.browser-default):focus:not([readonly])+label, input[type=number]:not(.browser-default):focus:not([readonly])+label, input[type=search]:not(.browser-default):focus:not([readonly])+label, textarea.materialize-textarea:focus:not([readonly])+label {
+	color: #607d8b !important;
 }

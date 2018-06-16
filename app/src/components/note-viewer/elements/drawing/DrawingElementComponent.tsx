@@ -4,6 +4,7 @@ import { dataURItoBlob } from '../../../../util';
 import { trim } from './trim-canvas';
 import Resizable from 're-resizable';
 import { Input, Row } from 'react-materialize';
+import * as stringify from 'json-stringify-safe';
 
 type Touch = {
 	identifier: number;
@@ -76,8 +77,8 @@ export default class DrawingElementComponent extends React.Component<INoteElemen
 						>
 						<canvas
 							ref={e => this.canvasElement = e!}
-							width="600"
-							height="500"
+							width="500"
+							height="450"
 							style={{border: 'solid black 1px', touchAction: 'none'}} />
 					</Resizable>
 
@@ -134,6 +135,10 @@ export default class DrawingElementComponent extends React.Component<INoteElemen
 			this.hasTrimmed = true;
 			this.imageElement.src = URL.createObjectURL(dataURItoBlob(trim(tmpCanvas).toDataURL()));
 		};
+	}
+
+	shouldComponentUpdate(nextProps: INoteElementComponentProps) {
+		return stringify(nextProps) !== stringify(this.props);
 	}
 
 	componentWillUpdate() {
@@ -218,11 +223,10 @@ export default class DrawingElementComponent extends React.Component<INoteElemen
 			top: (parseInt(element.args.y, 10) + 128) - noteViewer.scrollTop
 		};
 
-		const scale = parseInt(document.getElementById('note-container')!.style.transform!.split('(')[1].slice(0, -1), 10);
-
+		const scale = parseFloat(document.getElementById('note-container')!.style.transform!.split('(')[1].slice(0, -1));
 		return {
-			x: touch.x - (canvasOffset.left * scale),
-			y: touch.y - (canvasOffset.top * scale)
+			x: (touch.x - canvasOffset.left) * scale,
+			y: (touch.y - canvasOffset.top) * scale
 		};
 	}
 
